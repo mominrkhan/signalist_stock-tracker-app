@@ -27,13 +27,18 @@ export const PREFERRED_INDUSTRIES = [
 ];
 
 export const ALERT_TYPE_OPTIONS = [
-    { value: 'upper', label: 'Upper' },
-    { value: 'lower', label: 'Lower' },
+    { value: 'price', label: 'Price' },
 ];
 
 export const CONDITION_OPTIONS = [
     { value: 'greater', label: 'Greater than (>)' },
     { value: 'less', label: 'Less than (<)' },
+];
+
+export const FREQUENCY_OPTIONS = [
+    { value: 'once_per_day', label: 'Once per day' },
+    { value: 'once_per_hour', label: 'Once per hour' },
+    { value: 'real_time', label: 'Real-time' },
 ];
 
 // TradingView Charts

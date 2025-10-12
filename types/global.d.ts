@@ -181,8 +181,10 @@ declare global {
         symbol: string;
         company: string;
         alertName: string;
-        alertType: 'upper' | 'lower';
-        threshold: string;
+        alertType: 'price';
+        condition: 'greater' | 'less';
+        threshold: number;
+        frequency: string;
     };
 
     type UserForNewsEmail = {
@@ -192,11 +194,12 @@ declare global {
     };
     
     type AlertModalProps = {
-        alertId?: string;
-        alertData?: AlertData;
-        action?: string;
         open: boolean;
-        setOpen: (open: boolean) => void;
+        onOpenChange: (open: boolean) => void;
+        stock: {
+            symbol: string;
+            company: string;
+        };
     };
 
     type RawNewsArticle = {
@@ -212,14 +215,16 @@ declare global {
     };
 
     type Alert = {
-        id: string;
+        _id: string;
+        userId: string;
         symbol: string;
         company: string;
         alertName: string;
-        currentPrice: number;
-        alertType: 'upper' | 'lower';
+        alertType: 'price';
+        condition: 'greater' | 'less';
         threshold: number;
-        changePercent?: number;
+        frequency: string;
+        createdAt: Date;
     };
 }
 
