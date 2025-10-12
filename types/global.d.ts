@@ -134,6 +134,7 @@ declare global {
     type WatchlistTableProps = {
         watchlist: StockWithData[];
     };
+
     type StockWithData = {
         userId: string;
         symbol: string;
@@ -176,7 +177,6 @@ declare global {
         className?: string;
     };
 
-
     type AlertData = {
         symbol: string;
         company: string;
@@ -185,6 +185,12 @@ declare global {
         threshold: string;
     };
 
+    type UserForNewsEmail = {
+        id: string;
+        email: string;
+        name: string;
+    };
+    
     type AlertModalProps = {
         alertId?: string;
         alertData?: AlertData;
@@ -214,7 +220,6 @@ declare global {
         alertType: 'upper' | 'lower';
         threshold: number;
         changePercent?: number;
-       
     };
 }
 
