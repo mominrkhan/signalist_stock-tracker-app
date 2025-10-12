@@ -39,6 +39,12 @@ const WatchlistButton = ({
 
       // Notify parent component of watchlist change for state synchronization
       onWatchlistChange?.(symbol, !added);
+    } else {
+      // Revert optimistic update on error
+      setAdded(!added);
+      toast.error('Failed to update watchlist', {
+        description: result.error || 'Please try again',
+      });
     }
   };
 

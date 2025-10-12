@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -22,7 +22,7 @@ import {
   CONDITION_OPTIONS,
   FREQUENCY_OPTIONS,
 } from '@/lib/constants';
-import { createAlert } from '@/lib/actions/alert.actions';
+import { createAlert, updateAlert } from '@/lib/actions/alert.actions';
 import { toast } from 'sonner';
 
 interface AlertModalProps {
@@ -32,15 +32,35 @@ interface AlertModalProps {
     symbol: string;
     company: string;
   };
+  alertToEdit?: Alert | null;
+  onAlertUpdated?: () => void;
 }
 
-export function AlertModal({ open, onOpenChange, stock }: AlertModalProps) {
+export function AlertModal({ open, onOpenChange, stock, alertToEdit, onAlertUpdated }: AlertModalProps) {
   const [alertName, setAlertName] = useState('');
   const [alertType, setAlertType] = useState('price');
   const [condition, setCondition] = useState('greater');
   const [threshold, setThreshold] = useState('');
   const [frequency, setFrequency] = useState('once_per_day');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Populate form when editing
+  useEffect(() => {
+    if (alertToEdit) {
+      setAlertName(alertToEdit.alertName || '');
+      setAlertType(alertToEdit.alertType || 'price');
+      setCondition(alertToEdit.condition || 'greater');
+      setThreshold(alertToEdit.threshold?.toString() || '');
+      setFrequency(alertToEdit.frequency || 'once_per_day');
+    } else {
+      // Reset form when creating new
+      setAlertName('');
+      setAlertType('price');
+      setCondition('greater');
+      setThreshold('');
+      setFrequency('once_per_day');
+    }
+  }, [alertToEdit, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,21 +78,44 @@ export function AlertModal({ open, onOpenChange, stock }: AlertModalProps) {
     setIsSubmitting(true);
 
     try {
-      const result = await createAlert({
-        symbol: stock.symbol,
-        company: stock.company,
-        alertName: alertName.trim(),
-        alertType: alertType as 'price',
-        condition: condition as 'greater' | 'less',
-        threshold: parseFloat(threshold),
-        frequency,
-      });
+      let result;
+      
+      if (alertToEdit) {
+        // Update existing alert
+        result = await updateAlert(alertToEdit._id, {
+          alertName: alertName.trim(),
+          condition: condition as 'greater' | 'less',
+          threshold: parseFloat(threshold),
+          frequency,
+        });
+
+        if (result.success) {
+          toast.success('Alert Updated', {
+            description: `${alertName} has been updated successfully`,
+          });
+          onAlertUpdated?.();
+        }
+      } else {
+        // Create new alert
+        result = await createAlert({
+          symbol: stock.symbol,
+          company: stock.company,
+          alertName: alertName.trim(),
+          alertType: alertType as 'price',
+          condition: condition as 'greater' | 'less',
+          threshold: parseFloat(threshold),
+          frequency,
+        });
+
+        if (result.success) {
+          toast.success('Alert Created', {
+            description: `${alertName} has been created successfully`,
+          });
+          onAlertUpdated?.();
+        }
+      }
 
       if (result.success) {
-        toast.success('Alert Created', {
-          description: `${alertName} has been created successfully`,
-        });
-        
         // Reset form
         setAlertName('');
         setThreshold('');
@@ -81,9 +124,13 @@ export function AlertModal({ open, onOpenChange, stock }: AlertModalProps) {
         setFrequency('once_per_day');
         
         onOpenChange(false);
+      } else {
+        toast.error(`Failed to ${alertToEdit ? 'update' : 'create'} alert`, {
+          description: result.error || 'Please try again',
+        });
       }
     } catch (error) {
-      toast.error('Failed to create alert', {
+      toast.error(`Failed to ${alertToEdit ? 'update' : 'create'} alert`, {
         description: 'Please try again later',
       });
     } finally {
@@ -95,7 +142,9 @@ export function AlertModal({ open, onOpenChange, stock }: AlertModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='alert-modal'>
         <DialogHeader>
-          <DialogTitle className='alert-modal-title'>Price Alert</DialogTitle>
+          <DialogTitle className='alert-modal-title'>
+            {alertToEdit ? 'Edit Price Alert' : 'Price Alert'}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className='alert-form'>
           <div className='alert-field'>
@@ -202,7 +251,10 @@ export function AlertModal({ open, onOpenChange, stock }: AlertModalProps) {
             className='alert-submit-btn'
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Creating...' : 'Create Alert'}
+            {isSubmitting 
+              ? (alertToEdit ? 'Updating...' : 'Creating...') 
+              : (alertToEdit ? 'Update Alert' : 'Create Alert')
+            }
           </Button>
         </form>
       </DialogContent>

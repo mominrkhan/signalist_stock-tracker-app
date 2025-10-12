@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 import { auth } from '../better-auth/auth';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { Alert } from '@/database/models/alert.model';
 
 // Create a new alert
@@ -20,7 +19,9 @@ export const createAlert = async (alertData: {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-    if (!session?.user) redirect('/sign-in');
+    if (!session?.user) {
+      return { success: false, error: 'Not authenticated' };
+    }
 
     const newAlert = new Alert({
       userId: session.user.id,
@@ -39,7 +40,49 @@ export const createAlert = async (alertData: {
     return { success: true, message: 'Alert created successfully' };
   } catch (error) {
     console.error('Error creating alert:', error);
-    throw new Error('Failed to create alert');
+    return { success: false, error: 'Failed to create alert' };
+  }
+};
+
+// Update an alert
+export const updateAlert = async (
+  alertId: string,
+  alertData: {
+    alertName: string;
+    condition: 'greater' | 'less';
+    threshold: number;
+    frequency: string;
+  }
+) => {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+    if (!session?.user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    await Alert.updateOne(
+      {
+        _id: alertId,
+        userId: session.user.id,
+      },
+      {
+        $set: {
+          alertName: alertData.alertName.trim(),
+          condition: alertData.condition,
+          threshold: alertData.threshold,
+          frequency: alertData.frequency,
+        },
+      }
+    );
+
+    revalidatePath('/watchlist');
+
+    return { success: true, message: 'Alert updated successfully' };
+  } catch (error) {
+    console.error('Error updating alert:', error);
+    return { success: false, error: 'Failed to update alert' };
   }
 };
 
@@ -49,7 +92,9 @@ export const deleteAlert = async (alertId: string) => {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-    if (!session?.user) redirect('/sign-in');
+    if (!session?.user) {
+      return { success: false, error: 'Not authenticated' };
+    }
 
     await Alert.deleteOne({
       _id: alertId,
@@ -61,7 +106,7 @@ export const deleteAlert = async (alertId: string) => {
     return { success: true, message: 'Alert deleted successfully' };
   } catch (error) {
     console.error('Error deleting alert:', error);
-    throw new Error('Failed to delete alert');
+    return { success: false, error: 'Failed to delete alert' };
   }
 };
 
@@ -71,7 +116,7 @@ export const getUserAlerts = async () => {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-    if (!session?.user) redirect('/sign-in');
+    if (!session?.user) return [];
 
     const alerts = await Alert.find({ userId: session.user.id })
       .sort({ createdAt: -1 })
@@ -80,7 +125,7 @@ export const getUserAlerts = async () => {
     return JSON.parse(JSON.stringify(alerts));
   } catch (error) {
     console.error('Error fetching alerts:', error);
-    throw new Error('Failed to fetch alerts');
+    return [];
   }
 };
 
@@ -90,7 +135,7 @@ export const getAlertsBySymbol = async (symbol: string) => {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-    if (!session?.user) redirect('/sign-in');
+    if (!session?.user) return [];
 
     const alerts = await Alert.find({
       userId: session.user.id,
@@ -102,7 +147,7 @@ export const getAlertsBySymbol = async (symbol: string) => {
     return JSON.parse(JSON.stringify(alerts));
   } catch (error) {
     console.error('Error fetching alerts by symbol:', error);
-    throw new Error('Failed to fetch alerts');
+    return [];
   }
 };
 

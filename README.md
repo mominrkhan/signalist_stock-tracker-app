@@ -1,5 +1,27 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## ⚠️ Important: Finnhub API Rate Limits
+
+This application uses the Finnhub API to fetch stock market data. The **free tier** has the following limits:
+- **60 API calls per minute**
+- When the limit is reached, you'll see a 429 error
+
+### Solutions:
+
+1. **Upgrade your Finnhub plan**: Visit [Finnhub Pricing](https://finnhub.io/pricing) to get a higher rate limit
+2. **Use caching**: The app already implements caching to reduce API calls:
+   - Stock profiles: cached for 1 hour
+   - Financial metrics: cached for 30 minutes
+   - News: cached for 5 minutes
+3. **Wait and retry**: Rate limits reset after 1 minute
+
+### Graceful Degradation:
+
+The app is now configured to handle rate limits gracefully:
+- Returns placeholder data (—) when API limits are reached
+- Displays warnings in console instead of crashing
+- Shows empty states for news and search when limits are hit
+
 ## Getting Started
 
 First, run the development server:

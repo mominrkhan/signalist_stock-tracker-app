@@ -5,23 +5,49 @@ import { POPULAR_STOCK_SYMBOLS } from '@/lib/constants';
 import { cache } from 'react';
 import { auth } from '../better-auth/auth';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { getWatchlistSymbolsByEmail } from './watchlist.actions';
 
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
 const NEXT_PUBLIC_FINNHUB_API_KEY = process.env.NEXT_PUBLIC_FINNHUB_API_KEY ?? '';
 
-async function fetchJSON<T>(url: string, revalidateSeconds?: number): Promise<T> {
+async function fetchJSON<T>(
+  url: string, 
+  revalidateSeconds?: number,
+  returnNullOnError = false
+): Promise<T | null> {
   const options: RequestInit & { next?: { revalidate?: number } } = revalidateSeconds
     ? { cache: 'force-cache', next: { revalidate: revalidateSeconds } }
     : { cache: 'no-store' };
 
-  const res = await fetch(url, options);
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Fetch failed ${res.status}: ${text}`);
+  try {
+    const res = await fetch(url, options);
+    
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      
+      // Handle rate limit specifically
+      if (res.status === 429) {
+        console.warn('⚠️ Finnhub API rate limit reached. Consider upgrading your plan or reducing API calls.');
+        if (returnNullOnError) return null;
+      }
+      
+      // Handle other errors
+      if (returnNullOnError) {
+        console.error(`API error ${res.status}:`, text);
+        return null;
+      }
+      
+      throw new Error(`Fetch failed ${res.status}: ${text}`);
+    }
+    
+    return (await res.json()) as T;
+  } catch (error) {
+    if (returnNullOnError) {
+      console.error('Fetch error:', error);
+      return null;
+    }
+    throw error;
   }
-  return (await res.json()) as T;
 }
 
 export { fetchJSON };
@@ -31,7 +57,8 @@ export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> 
     const range = getDateRange(5);
     const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
     if (!token) {
-      throw new Error('FINNHUB API key is not configured');
+      console.error('FINNHUB API key is not configured');
+      return [];
     }
     const cleanSymbols = (symbols || [])
       .map((s) => s?.trim().toUpperCase())
@@ -47,7 +74,7 @@ export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> 
         cleanSymbols.map(async (sym) => {
           try {
             const url = `${FINNHUB_BASE_URL}/company-news?symbol=${encodeURIComponent(sym)}&from=${range.from}&to=${range.to}&token=${token}`;
-            const articles = await fetchJSON<RawNewsArticle[]>(url, 300);
+            const articles = await fetchJSON<RawNewsArticle[]>(url, 300, true);
             perSymbolArticles[sym] = (articles || []).filter(validateArticle);
           } catch (e) {
             console.error('Error fetching company news for', sym, e);
@@ -81,7 +108,12 @@ export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> 
 
     // General market news fallback or when no symbols provided
     const generalUrl = `${FINNHUB_BASE_URL}/news?category=general&token=${token}`;
-    const general = await fetchJSON<RawNewsArticle[]>(generalUrl, 300);
+    const general = await fetchJSON<RawNewsArticle[]>(generalUrl, 300, true);
+
+    if (!general) {
+      // Rate limit or error - return empty array
+      return [];
+    }
 
     const seen = new Set<string>();
     const unique: RawNewsArticle[] = [];
@@ -98,7 +130,8 @@ export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> 
     return formatted;
   } catch (err) {
     console.error('getNews error:', err);
-    throw new Error('Failed to fetch news');
+    // Return empty array instead of throwing
+    return [];
   }
 }
 
@@ -107,7 +140,7 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-    if (!session?.user) redirect('/sign-in');
+    if (!session?.user) return [];
 
     const userWatchlistSymbols = await getWatchlistSymbolsByEmail(
       session.user.email
@@ -131,8 +164,8 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
         top.map(async (sym) => {
           try {
             const url = `${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(sym)}&token=${token}`;
-            // Revalidate every hour
-            const profile = await fetchJSON<any>(url, 3600);
+            // Revalidate every hour, return null on error
+            const profile = await fetchJSON<any>(url, 3600, true);
             return { sym, profile } as { sym: string; profile: any };
           } catch (e) {
             console.error('Error fetching profile2 for', sym, e);
@@ -162,7 +195,7 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
         .filter((x): x is FinnhubSearchResult => Boolean(x));
     } else {
       const url = `${FINNHUB_BASE_URL}/search?q=${encodeURIComponent(trimmed)}&token=${token}`;
-      const data = await fetchJSON<FinnhubSearchResponse>(url, 1800);
+      const data = await fetchJSON<FinnhubSearchResponse>(url, 1800, true);
       results = Array.isArray(data?.result) ? data.result : [];
     }
 
@@ -202,28 +235,44 @@ export const getStocksDetails = cache(async (symbol: string) => {
     const [quote, profile, financials] = await Promise.all([
       fetchJSON(
         // Price data - no caching for accuracy
-        `${FINNHUB_BASE_URL}/quote?symbol=${cleanSymbol}&token=${NEXT_PUBLIC_FINNHUB_API_KEY}`
+        `${FINNHUB_BASE_URL}/quote?symbol=${cleanSymbol}&token=${NEXT_PUBLIC_FINNHUB_API_KEY}`,
+        undefined,
+        true
       ),
       fetchJSON(
         // Company info - cache 1hr (rarely changes)
         `${FINNHUB_BASE_URL}/stock/profile2?symbol=${cleanSymbol}&token=${NEXT_PUBLIC_FINNHUB_API_KEY}`,
-        3600
+        3600,
+        true
       ),
       fetchJSON(
         // Financial metrics (P/E, etc.) - cache 30min
         `${FINNHUB_BASE_URL}/stock/metric?symbol=${cleanSymbol}&metric=all&token=${NEXT_PUBLIC_FINNHUB_API_KEY}`,
-        1800
+        1800,
+        true
       ),
     ]);
 
     // Type cast the responses
-    const quoteData = quote as QuoteData;
-    const profileData = profile as ProfileData;
-    const financialsData = financials as FinancialsData;
+    const quoteData = quote as QuoteData | null;
+    const profileData = profile as ProfileData | null;
+    const financialsData = financials as FinancialsData | null;
 
     // Check if we got valid quote and profile data
-    if (!quoteData?.c || !profileData?.name)
-      throw new Error('Invalid stock data received from API');
+    if (!quoteData?.c || !profileData?.name) {
+      // Return placeholder data when API limit is reached
+      console.warn(`Unable to fetch complete data for ${cleanSymbol}, returning placeholder`);
+      return {
+        symbol: cleanSymbol,
+        company: cleanSymbol,
+        currentPrice: 0,
+        changePercent: 0,
+        priceFormatted: '—',
+        changeFormatted: '—',
+        peRatio: '—',
+        marketCapFormatted: '—',
+      };
+    }
 
     const changePercent = quoteData.dp || 0;
     const peRatio = financialsData?.metric?.peNormalizedAnnual || null;
@@ -242,6 +291,16 @@ export const getStocksDetails = cache(async (symbol: string) => {
     };
   } catch (error) {
     console.error(`Error fetching details for ${cleanSymbol}:`, error);
-    throw new Error('Failed to fetch stock details');
+    // Return placeholder data instead of throwing
+    return {
+      symbol: cleanSymbol,
+      company: cleanSymbol,
+      currentPrice: 0,
+      changePercent: 0,
+      priceFormatted: '—',
+      changeFormatted: '—',
+      peRatio: '—',
+      marketCapFormatted: '—',
+    };
   }
 });

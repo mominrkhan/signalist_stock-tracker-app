@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 import { auth } from '../better-auth/auth';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { connectToDatabase } from '@/database/mongoose';
 import { Watchlist } from '@/database/models/watchlist.model';
 import { getStocksDetails } from './finnhub.actions';
@@ -38,7 +37,9 @@ export const addToWatchlist = async (symbol: string, company: string) => {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-    if (!session?.user) redirect('/sign-in');
+    if (!session?.user) {
+      return { success: false, error: 'Not authenticated' };
+    }
 
     // Check if stock already exists in watchlist
     const existingItem = await Watchlist.findOne({
@@ -63,7 +64,7 @@ export const addToWatchlist = async (symbol: string, company: string) => {
     return { success: true, message: 'Stock added to watchlist' };
   } catch (error) {
     console.error('Error adding to watchlist:', error);
-    throw new Error('Failed to add stock to watchlist');
+    return { success: false, error: 'Failed to add stock to watchlist' };
   }
 };
 
@@ -73,7 +74,9 @@ export const removeFromWatchlist = async (symbol: string) => {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-    if (!session?.user) redirect('/sign-in');
+    if (!session?.user) {
+      return { success: false, error: 'Not authenticated' };
+    }
 
     // Remove from watchlist
     await Watchlist.deleteOne({
@@ -85,7 +88,7 @@ export const removeFromWatchlist = async (symbol: string) => {
     return { success: true, message: 'Stock removed from watchlist' };
   } catch (error) {
     console.error('Error removing from watchlist:', error);
-    throw new Error('Failed to remove stock from watchlist');
+    return { success: false, error: 'Failed to remove stock from watchlist' };
   }
 };
 
@@ -95,7 +98,7 @@ export const getUserWatchlist = async () => {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-    if (!session?.user) redirect('/sign-in');
+    if (!session?.user) return [];
 
     const watchlist = await Watchlist.find({ userId: session.user.id })
       .sort({ addedAt: -1 })
@@ -104,7 +107,7 @@ export const getUserWatchlist = async () => {
     return JSON.parse(JSON.stringify(watchlist));
   } catch (error) {
     console.error('Error fetching watchlist:', error);
-    throw new Error('Failed to fetch watchlist');
+    return [];
   }
 };
 
@@ -114,7 +117,7 @@ export const getWatchlistWithData = async () => {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-    if (!session?.user) redirect('/sign-in');
+    if (!session?.user) return [];
 
     const watchlist = await Watchlist.find({ userId: session.user.id }).sort({ addedAt: -1 }).lean();
 
@@ -122,29 +125,53 @@ export const getWatchlistWithData = async () => {
 
     const stocksWithData = await Promise.all(
       watchlist.map(async (item) => {
-        const stockData = await getStocksDetails(item.symbol);
+        try {
+          const stockData = await getStocksDetails(item.symbol);
 
-        if (!stockData) {
-          console.warn(`Failed to fetch data for ${item.symbol}`);
-          return item;
+          if (!stockData) {
+            console.warn(`Failed to fetch data for ${item.symbol}`);
+            return {
+              company: item.company,
+              symbol: item.symbol,
+              currentPrice: 0,
+              priceFormatted: '—',
+              changeFormatted: '—',
+              changePercent: 0,
+              marketCap: '—',
+              peRatio: '—',
+            };
+          }
+
+          return {
+            company: stockData.company,
+            symbol: stockData.symbol,
+            currentPrice: stockData.currentPrice,
+            priceFormatted: stockData.priceFormatted,
+            changeFormatted: stockData.changeFormatted,
+            changePercent: stockData.changePercent,
+            marketCap: stockData.marketCapFormatted,
+            peRatio: stockData.peRatio,
+          };
+        } catch (error) {
+          console.error(`Error fetching data for ${item.symbol}:`, error);
+          // Return placeholder data for this stock
+          return {
+            company: item.company,
+            symbol: item.symbol,
+            currentPrice: 0,
+            priceFormatted: '—',
+            changeFormatted: '—',
+            changePercent: 0,
+            marketCap: '—',
+            peRatio: '—',
+          };
         }
-
-        return {
-          company: stockData.company,
-          symbol: stockData.symbol,
-          currentPrice: stockData.currentPrice,
-          priceFormatted: stockData.priceFormatted,
-          changeFormatted: stockData.changeFormatted,
-          changePercent: stockData.changePercent,
-          marketCap: stockData.marketCapFormatted,
-          peRatio: stockData.peRatio,
-        };
       }),
     );
 
     return JSON.parse(JSON.stringify(stocksWithData));
   } catch (error) {
     console.error('Error loading watchlist:', error);
-    throw new Error('Failed to fetch watchlist');
+    return [];
   }
 };

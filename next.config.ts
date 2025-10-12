@@ -4,9 +4,20 @@ const nextConfig: NextConfig = {
   /* config options here */
   eslint: {
       ignoreDuringBuilds: true,
-  }, typescript: {
+  }, 
+  typescript: {
       ignoreBuildErrors: true
-    }
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'img.logo.dev',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
 };
 
 export default nextConfig;
