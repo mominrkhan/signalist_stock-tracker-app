@@ -48,45 +48,46 @@ Before running this project locally, ensure you have the following installed:
    # Email
    NODEMAILER_EMAIL=<from-address>
    NODEMAILER_PASSWORD=<app-password-or-smtp-secret>
-````
+```
 
 3. **Install dependencies:**
 
-   ```bash
-   npm install
-   ```
+    ```bash
+    npm install
+    ```
+
 4. **Start background workers** (new terminal):
 
-   ```bash
-   npx inngest-cli@latest dev
-   ```
+    ```bash
+    npx inngest-cli@latest dev
+    ```
 
 ### Frontend Setup
 
 1. **Run the Next.js app:**
 
-   ```bash
-   npm run dev
-   ```
+    ```bash
+    npm run dev
+    ```
+
 2. Open `http://localhost:3000` in your browser.
 
 ## Usage
 
-* Access the application via `http://localhost:3000`.
-* Sign up / sign in (Better Auth).
-* Search a ticker to view quotes, TradingView charts, and related news.
-* Add tickers to your **Watchlist**.
-* Create **Price Alerts** (e.g., “AAPL < 150”) — alerts are evaluated by Inngest and notifications are emailed via Nodemailer.
-* View your **AI Daily Digest** on the dashboard and in your inbox.
-* **(Optional) API endpoints** if you enable Route Handlers:
+- Access the application via `http://localhost:3000`.
+- Sign up / sign in (Better Auth).
+- Search a ticker to view quotes, TradingView charts, and related news.
+- Add tickers to your **Watchlist**.
+- Create **Price Alerts** (e.g., `AAPL < 150`) — alerts are evaluated by Inngest and notifications are emailed via Nodemailer.
+- View your **AI Daily Digest** on the dashboard and in your inbox.
 
-  * `/api/watchlist` — `GET` (list), `POST` (add), `DELETE` (clear)
-  * `/api/alerts` — `GET` (list), `POST` (create)
-  * `/api/alerts/{alertId}` — `GET`, `PUT`, `DELETE`
-  * `/api/quotes/{symbol}` — `GET` (proxied market data)
+### API Endpoints (Optional — if using Route Handlers)
+
+- `/api/watchlist` — `GET` (list), `POST` (add), `DELETE` (clear)
+- `/api/alerts` — `GET` (list), `POST` (create)
+- `/api/alerts/{alertId}` — `GET`, `PUT`, `DELETE`
+- `/api/quotes/{symbol}` — `GET` (proxied market data)
 
 ## Contributing
 
 Contributions are welcome! If you'd like to enhance this project or report issues, please submit a pull request or open an issue.
-
-```
