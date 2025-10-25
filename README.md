@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Signalist — Stock Market App
 
-## Getting Started
+This project is a real-time stock market platform for tracking prices, building watchlists, setting price alerts, reading AI-generated digests, and viewing professional charts. It uses a **MongoDB** database for persistence, a **Next.js** application (Server Actions & Route Handlers) to expose a RESTful-style backend and serve the UI, and a **React/TypeScript** frontend styled with Tailwind and shadcn/ui.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Visit The Site
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Feel free to check out the **project here!**
+*(https://signalistrading.vercel.app/sign-in)*
+![signalist](https://github.com/user-attachments/assets/90d7e47b-6258-492a-9c56-1663cfbce305)
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+* **MongoDB Database:** Stores users, watchlists, alerts, and generated digests with indexes, unique constraints, and timestamps.
+* **Next.js Backend:** Server Actions & Route Handlers power CRUD operations, TradingView/Finnhub integrations, and secure session handling. Background jobs run with **Inngest** for alert checks and daily summaries; email is sent with **Nodemailer**.
+* **React Frontend:** A modern dark UI using **Tailwind CSS**, **shadcn/ui**, **Radix UI**, and **Framer Motion**. Includes ticker search, watchlists, alert modals, AI news summaries, and embedded **TradingView** charts.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Prerequisites
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Before running this project locally, ensure you have the following installed:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+* Node.js and npm
+* MongoDB database (local or Atlas)
+* Inngest CLI (for background jobs): `npx inngest-cli@latest`
+* SMTP credentials for Nodemailer (or a provider like SendGrid/Mailgun)
+* API keys: **Finnhub** (market data) and **Gemini** (AI summaries)
+* Git / IDE (VS Code, WebStorm, etc.)
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Installation
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Backend Setup
+
+1. **Clone the repository.**
+2. **Create a `.env` file** in the project root with your credentials:
+
+   ```
+   NODE_ENV=development
+   MONGODB_URI=<your-mongodb-uri>
+
+   # Auth
+   BETTER_AUTH_SECRET=<random-32+ chars>
+   BETTER_AUTH_URL=http://localhost:3000
+
+   # Data/APIs
+   FINNHUB_BASE_URL=https://finnhub.io/api/v1
+   NEXT_PUBLIC_NEXT_PUBLIC_FINNHUB_API_KEY=<your-finnhub-key>
+   GEMINI_API_KEY=<your-gemini-key>
+
+   # Email
+   NODEMAILER_EMAIL=<from-address>
+   NODEMAILER_PASSWORD=<app-password-or-smtp-secret>
+   ```
+3. **Install dependencies:**
+
+   ```
+   npm install
+   ```
+4. **Start background workers** (new terminal):
+
+   ```
+   npx inngest-cli@latest dev
+   ```
+
+### Frontend Setup
+
+1. **Run the Next.js app:**
+
+   ```
+   npm run dev
+   ```
+2. Open `http://localhost:3000` in your browser.
+
+---
+
+## Usage
+
+* Access the application via `http://localhost:3000`.
+* Sign up / sign in (Better Auth).
+* Search a ticker to view quotes, TradingView charts, and related news.
+* Add tickers to your **Watchlist**.
+* Create **Price Alerts** (e.g., “AAPL < 150”) — alerts are evaluated by Inngest and notifications are emailed via Nodemailer.
+* View your **AI Daily Digest** on the dashboard and in your inbox.
+
+---
+
+## Contributing
+
+Contributions are welcome! If you’d like to enhance the UI/UX, add portfolio tracking, integrate WebSockets for streaming prices, or expand alert operators (%, volume spikes, crosses), please open an issue or submit a pull request.
