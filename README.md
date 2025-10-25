@@ -1,3 +1,4 @@
+```md
 # Signalist — Stock Market App
 
 This project is a real-time stock market platform for tracking prices, building watchlists, setting price alerts, reading AI-generated digests, and viewing professional charts. It uses a **MongoDB** database for persistence, a **Next.js** application (Server Actions & Route Handlers) to expose a RESTful-style backend and serve the UI, and a **React/TypeScript** frontend styled with Tailwind and shadcn/ui.
@@ -6,9 +7,10 @@ This project is a real-time stock market platform for tracking prices, building 
 
 ## Visit The Site
 
-Feel free to check out the **project here!**
-*(https://signalistrading.vercel.app/sign-in)*
+Feel free to check out the [project here!](https://signalistrading.vercel.app/sign-in)
+
 ![signalist](https://github.com/user-attachments/assets/90d7e47b-6258-492a-9c56-1663cfbce305)
+
 ---
 
 ## Features
@@ -39,41 +41,52 @@ Before running this project locally, ensure you have the following installed:
 1. **Clone the repository.**
 2. **Create a `.env` file** in the project root with your credentials:
 
-   ```
-   NODE_ENV=development
-   MONGODB_URI=<your-mongodb-uri>
+```
 
-   # Auth
-   BETTER_AUTH_SECRET=<random-32+ chars>
-   BETTER_AUTH_URL=http://localhost:3000
+NODE_ENV=development
+MONGODB_URI=<your-mongodb-uri>
 
-   # Data/APIs
-   FINNHUB_BASE_URL=https://finnhub.io/api/v1
-   NEXT_PUBLIC_NEXT_PUBLIC_FINNHUB_API_KEY=<your-finnhub-key>
-   GEMINI_API_KEY=<your-gemini-key>
+# Auth
 
-   # Email
-   NODEMAILER_EMAIL=<from-address>
-   NODEMAILER_PASSWORD=<app-password-or-smtp-secret>
-   ```
+BETTER_AUTH_SECRET=<random-32+ chars>
+BETTER_AUTH_URL=[http://localhost:3000](http://localhost:3000)
+
+# Data/APIs
+
+FINNHUB_BASE_URL=[https://finnhub.io/api/v1](https://finnhub.io/api/v1)
+NEXT_PUBLIC_NEXT_PUBLIC_FINNHUB_API_KEY=<your-finnhub-key>
+GEMINI_API_KEY=<your-gemini-key>
+
+# Email
+
+NODEMAILER_EMAIL=<from-address>
+NODEMAILER_PASSWORD=<app-password-or-smtp-secret>
+
+```
 3. **Install dependencies:**
 
-   ```
-   npm install
-   ```
+```
+
+npm install
+
+```
 4. **Start background workers** (new terminal):
 
-   ```
-   npx inngest-cli@latest dev
-   ```
+```
+
+npx inngest-cli@latest dev
+
+```
 
 ### Frontend Setup
 
 1. **Run the Next.js app:**
 
-   ```
-   npm run dev
-   ```
+```
+
+npm run dev
+
+```
 2. Open `http://localhost:3000` in your browser.
 
 ---
@@ -91,4 +104,5 @@ Before running this project locally, ensure you have the following installed:
 
 ## Contributing
 
-Contributions are welcome! If you’d like to enhance the UI/UX, add portfolio tracking, integrate WebSockets for streaming prices, or expand alert operators (%, volume spikes, crosses), please open an issue or submit a pull request.
+Contributions are welcome! If you'd like to enhance this project or report issues, please submit a pull request or open an issue.
+```
